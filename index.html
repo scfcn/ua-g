@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User-Agent生成器</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --hover-color: #357abd;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            min-height: 100vh;
+        }
+        
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.25rem rgba(74, 144, 226, 0.25);
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border: none;
+            padding: 10px 25px;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--hover-color);
+        }
+        
+        .preview-area {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Courier New', Courier, monospace;
+            min-height: 100px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <h1 class="text-center mb-4">User-Agent生成器</h1>
+        
+        <div class="row g-4">
+            <!-- 配置区域 -->
+            <div class="col-lg-6">
+                <div class="card h-100 p-3">
+                    <h4 class="mb-3">配置选项</h4>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">浏览器类型</label>
+                        <select class="form-select" id="browserType">
+                            <option value="chrome">Chrome</option>
+                            <option value="firefox">Firefox</option>
+                            <option value="safari">Safari</option>
+                            <option value="edge">Edge</option>
+                            <option value="opera">Opera</option>
+                        </select>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">浏览器版本</label>
+                            <input type="text" class="form-control" id="browserVersion" value="98.0.4758.102">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">操作系统</label>
+                            <select class="form-select" id="os">
+                                <option value="windows">Windows</option>
+                                <option value="macos">macOS</option>
+                                <option value="linux">Linux</option>
+                                <option value="android">Android</option>
+                                <option value="ios">iOS</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <label class="form-label">设备类型</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="deviceType" id="desktop" checked>
+                            <label class="form-check-label" for="desktop">桌面设备</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="deviceType" id="mobile">
+                            <label class="form-check-label" for="mobile">移动设备</label>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <label class="form-label">自定义参数</label>
+                        <div class="input-group mb-2">
+                            <input type="text" class="form-control" id="customParam" placeholder="添加自定义参数">
+                            <button class="btn btn-outline-secondary" onclick="addCustomParam()">添加</button>
+                        </div>
+                        <div id="customParamsList" class="d-flex flex-wrap gap-2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 预览区域 -->
+            <div class="col-lg-6">
+                <div class="card h-100 p-3">
+                    <h4 class="mb-3">生成结果</h4>
+                    <div class="preview-area mb-3" id="uaPreview"></div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary" onclick="copyUA()">复制到剪贴板</button>
+                        <button class="btn btn-outline-primary" onclick="exportUA()">导出为文本</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const templates = {
+            chrome: 'Mozilla/5.0 ({platform}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{version} Safari/537.36',
+            firefox: 'Mozilla/5.0 ({platform}; rv:{version}) Gecko/20100101 Firefox/{version}',
+            safari: 'Mozilla/5.0 ({platform}) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/{version} Safari/605.1.15',
+            edge: 'Mozilla/5.0 ({platform}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{version} Safari/537.36 Edg/{version}',
+            opera: 'Mozilla/5.0 ({platform}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{version} Safari/537.36 OPR/{version}'
+        };
+
+        const platformTemplates = {
+            windows: {
+                desktop: 'Windows NT 10.0; Win64; x64',
+                mobile: 'Windows Phone 10.0; Android 4.2.1'
+            },
+            macos: {
+                desktop: 'Macintosh; Intel Mac OS X 10_15_7',
+                mobile: 'iPad; CPU OS 15_3 like Mac OS X'
+            },
+            linux: {
+                desktop: 'X11; Linux x86_64',
+                mobile: 'Linux; Android 11; Pixel 5'
+            },
+            android: 'Linux; Android 12; {model}',
+            ios: 'iPhone; CPU iPhone OS 15_3 like Mac OS X'
+        };
+
+        let customParams = [];
+
+        function generateUA() {
+            const browserType = document.getElementById('browserType').value;
+            const version = document.getElementById('browserVersion').value;
+            const os = document.getElementById('os').value;
+            const isMobile = document.getElementById('mobile').checked;
+            const deviceType = isMobile ? 'mobile' : 'desktop';
+
+            let platform = '';
+            if (os === 'android' || os === 'ios') {
+                platform = platformTemplates[os];
+            } else {
+                platform = platformTemplates[os][deviceType];
+            }
+
+            let ua = templates[browserType]
+                .replace('{platform}', platform)
+                .replace(/{version}/g, version);
+
+            if (customParams.length > 0) {
+                ua = ua.replace(')', `; ${customParams.join('; ')})`);
+            }
+
+            document.getElementById('uaPreview').textContent = ua;
+        }
+
+        function addCustomParam() {
+            const paramInput = document.getElementById('customParam');
+            if (paramInput.value.trim()) {
+                customParams.push(paramInput.value.trim());
+                updateCustomParamsDisplay();
+                paramInput.value = '';
+                generateUA();
+            }
+        }
+
+        function updateCustomParamsDisplay() {
+            const container = document.getElementById('customParamsList');
+            container.innerHTML = customParams.map((param, index) => `
+                <span class="badge bg-primary d-flex align-items-center gap-1">
+                    ${param}
+                    <button class="btn-close btn-close-white" style="font-size:10px" 
+                            onclick="removeParam(${index})"></button>
+                </span>
+            `).join('');
+        }
+
+        function removeParam(index) {
+            customParams.splice(index, 1);
+            updateCustomParamsDisplay();
+            generateUA();
+        }
+
+        function copyUA() {
+            const ua = document.getElementById('uaPreview').textContent;
+            navigator.clipboard.writeText(ua).then(() => {
+                alert('已复制到剪贴板！');
+            });
+        }
+
+        function exportUA() {
+            const ua = document.getElementById('uaPreview').textContent;
+            const blob = new Blob([ua], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'custom_user_agent.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // 初始化事件监听
+        document.querySelectorAll('select, input, radio').forEach(element => {
+            element.addEventListener('change', generateUA);
+        });
+        document.getElementById('browserVersion').addEventListener('input', generateUA);
+        
+        // 初始生成
+        generateUA();
+    </script>
+</body>
+</html>
