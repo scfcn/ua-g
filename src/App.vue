@@ -128,7 +128,7 @@ n<template>
           <div class="flex gap-4 sm:gap-6 text-sm">
             <a href="https://www.qixz.cn/" class="text-slate-600 hover:text-primary transition-colors">青序栈</a>
             <a href="https://github.com/scfc/ua-g" class="text-slate-600 hover:text-primary transition-colors">Github</a>
-            <a href="https://icp.xnet.ren/beian/ICP-20250000.html" class="text-slate-600 hover:text-primary transition-colors" title="信网联盟20250000号" target="_blank">信网联盟20250000号</a>
+            <a href="https://icp.xnet.ren/beian/ICP-2026010086.html" class="text-slate-600 hover:text-primary transition-colors" title="信网联盟20250000号" target="_blank">信网联盟2026010086号</a>
           </div>
         </div>
       </div>
